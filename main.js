@@ -5,7 +5,7 @@ const path = require("path");
 
 let win = null;
 const SERVER_URL = "http://localhost:3000";
-const CLIENT_ID = "ODcyMDE4MDA0NTQyNjQ0MzA0";
+const CLIENT_ID = "872018004542644304";
 
 console.log("[MAIN LOG] 🚀 Electron folyamat elindult...");
 
