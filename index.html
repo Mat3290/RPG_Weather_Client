@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="hu">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RPG Időjárás Overlay</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body,
+      html {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: transparent !important;
+        font-family: "Segoe UI", sans-serif;
+      }
+      canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+        pointer-events: none;
+      }
+      .lightning-flash {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background: #ffffff;
+        opacity: 0;
+        z-index: 2;
+        pointer-events: none;
+      }
+      @keyframes flashAnim {
+        0% {
+          opacity: 0;
+        }
+        10% {
+          opacity: 0.8;
+        }
+        15% {
+          opacity: 0.1;
+        }
+        20% {
+          opacity: 0.9;
+        }
+        30% {
+          opacity: 0;
+        }
+        100% {
+          opacity: 0;
+        }
+      }
+      /* Agresszívebb státusz panel, hogy lássuk mi történik */
+      #status-panel {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        z-index: 10;
+        color: #00ffcc;
+        background: rgba(0, 0, 0, 0.8);
+        padding: 10px 15px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-family: monospace;
+        border: 1px solid #00ffcc;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="lightning-flash" id="flash"></div>
+    <canvas id="canvas"></canvas>
+
+    <div id="status-panel">
+      <div>[FRONTEND LOGS]</div>
+      <div id="weather-text">Inicializálás...</div>
+      <div id="debug-text">Szerver kérés indítása...</div>
+    </div>
+
+    <script>
+      const BACKEND_SERVER = "http://localhost:3000";
+      console.log("[FRONTEND] 🚀 Eső motor elindult.");
+
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+      const flashDiv = document.getElementById("flash");
+      let width = (canvas.width = window.innerWidth);
+      let height = (canvas.height = window.innerHeight);
+
+      window.addEventListener("resize", () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+      });
+
+      const drops = [];
+      for (let i = 0; i < 200; i++) {
+        drops.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          length: Math.random() * 25 + 15,
+          speed: Math.random() * 12 + 12,
+        });
+      }
+
+      function drawRain() {
+        ctx.clearRect(0, 0, width, height);
+        ctx.strokeStyle = "rgba(174, 194, 224, 0.4)";
+        ctx.lineWidth = 1.3;
+        for (let i = 0; i < drops.length; i++) {
+          let p = drops[i];
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(p.x, p.y + p.length);
+          ctx.stroke();
+          p.y += p.speed;
+          if (p.y > height) {
+            p.y = -p.length;
+            p.x = Math.random() * width;
+          }
+        }
+      }
+
+      function triggerLightning() {
+        flashDiv.style.animation = "flashAnim 0.4s ease-out";
+        setTimeout(() => {
+          flashDiv.style.animation = "none";
+        }, 400);
+      }
+
+      let isStorming = false;
+
+      async function updateWeather() {
+        const url = `${BACKEND_SERVER}/api/weather`;
+        console.log(`[FRONTEND] 🛰️ Időjárás lekérése innen: ${url}`);
+        document.getElementById("debug-text").innerText =
+          "Lekérés folyamatban...";
+
+        try {
+          const res = await fetch(url);
+          const data = await res.json();
+          console.log("[FRONTEND] 📥 Beérkezett adatok:", data);
+
+          if (data && data.success) {
+            document.getElementById("weather-text").innerText =
+              `Típus: ${String(data.type).toUpperCase()}`;
+            document.getElementById("debug-text").innerText =
+              `Temp: ${data.temp}°C | OK`;
+
+            isStorming =
+              String(data.type).toLowerCase().includes("vihar") ||
+              String(data.type).toLowerCase().includes("eső");
+            console.log(
+              `[FRONTEND] Renderelési döntés -> isStorming: ${isStorming}`,
+            );
+          }
+        } catch (e) {
+          console.error(
+            "❌ [FRONTEND ERROR] Nem sikerült elérni az Express API-t:",
+            e.message,
+          );
+          isStorming = false;
+          document.getElementById("weather-text").innerText =
+            "Státusz: SZERVER OFFLINE";
+          document.getElementById("debug-text").innerText =
+            `Hiba: ${e.message}`;
+        }
+      }
+
+      function loop() {
+        if (isStorming) {
+          drawRain();
+          if (Math.random() < 0.004) triggerLightning();
+        } else {
+          ctx.clearRect(0, 0, width, height);
+        }
+        requestAnimationFrame(loop);
+      }
+
+      updateWeather();
+      setInterval(updateWeather, 3000);
+      loop();
+    </script>
+  </body>
+</html>

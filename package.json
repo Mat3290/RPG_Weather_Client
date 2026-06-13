@@ -1,0 +1,27 @@
+{
+  "name": "rpg-weather-overlay",
+  "version": "1.0.0",
+  "main": "main.obfuscated.js",
+  "scripts": {
+    "start": "electron .",
+    "titkosít": "javascript-obfuscator main.js --output main.obfuscated.js --compact true --self-defending true"
+  },
+  "dependencies": {
+    "discord-rpc": "^4.0.1",
+    "electron-updater": "^6.1.4"
+  },
+  "devDependencies": {
+    "electron": "^30.0.0",
+    "javascript-obfuscator": "^4.1.1"
+  },
+  "build": {
+    "appId": "com.rpg.weatheroverlay",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Mat3290",
+        "repo": "rpg_weather_client"
+      }
+    ]
+  }
+}
